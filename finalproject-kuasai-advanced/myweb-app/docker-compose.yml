@@ -1,0 +1,56 @@
+version: "3.1"
+
+services:
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: dbkuasai
+      MYSQL_USER: cilsykuasaiuser
+      MYSQL_PASSWORD: cilsykuasaipassword
+      MYSQL_ROOT_PASSWORD: arryaws123
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - int_net
+  pma:
+    image: phpmyadmin/phpmyadmin:4.8.3
+    links:
+      - db:mysql
+    healthcheck:
+      test: curl -f http://localhost/ || exit 1
+      timeout: 3s
+      interval: 30s
+    networks:
+      - proxy_net
+      - int_net
+  web:
+    build:
+      context: .
+      dockerfile: web.Dockerfile
+    links:
+      - db:mysql
+    networks:
+      - proxy_net
+      - int_net
+  proxy:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    depends_on:
+      - web
+      - pma
+    ports:
+      - '80:80'
+    networks:
+      - proxy_net
+      - ext_net
+volumes:
+  mysql-data:
+networks:
+  int_net:
+    driver: bridge
+  proxy_net:
+    driver: bridge
+  ext_net:
+    driver: bridge
+

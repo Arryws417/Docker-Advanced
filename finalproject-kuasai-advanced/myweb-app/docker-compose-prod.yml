@@ -1,0 +1,64 @@
+version: "3.1"
+
+services:
+  db:
+    image: mysql:5.7		
+    environment:
+      MYSQL_DATABASE: dbkuasai
+      MYSQL_USER: cilsykuasaiuser
+      MYSQL_PASSWORD: cilsykuasaiuser
+      MYSQL_ROOT_PASSWORD: arryaws123
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - int_net
+  pma:
+    image: phpmyadmin/phpmyadmin:4.8.3
+    depends_on:
+      - db
+    deploy:
+      restart_policy:
+        condition: on-failure
+    healthcheck:
+      test: curl -f http://localhost/ || exit 1
+      timeout: 3s
+      interval: 30s
+    networks:
+      - proxy_net
+      - int_net
+  web:
+    image: arryws/finalproject-kuasai-advanced:web-1.0
+    depends_on:
+      - db
+    deploy:
+      restart_policy:
+        condition: on-failure
+    networks:
+      - proxy_net
+      - int_net
+  proxy:
+    image: arryws/finalproject-kuasai-advanced:proxy-1.0
+    ports:
+      - '80:80'
+    depends_on:
+      - web
+      - pma
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+    networks:
+      - proxy_net
+      - ext_net
+
+volumes:
+  mysql-data:
+
+networks:
+  int_net:
+    driver: overlay
+  proxy_net:
+    driver: overlay
+  ext_net:
+    driver: overlay	
+
